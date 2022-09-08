@@ -233,6 +233,11 @@ func (g *GitlabClient) PullIsMergeable(repo models.Repo, pull models.PullRequest
 	return false, nil
 }
 
+// PullIsMerged returns true if the merge request was merged.
+func (g *GitlabClient) PullIsMerged(repo models.Repo, pull models.PullRequest, vcsstatusname string) (bool, error) {
+	return false, errors.New("feature not supported for Gitlab merge request")
+}
+
 // UpdateStatus updates the build status of a commit.
 func (g *GitlabClient) UpdateStatus(repo models.Repo, pull models.PullRequest, state models.CommitStatus, src string, description string, url string) error {
 	gitlabState := gitlab.Pending

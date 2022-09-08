@@ -478,7 +478,12 @@ func (e *EventParser) ParseGithubPullEvent(pullEvent *github.PullRequestEvent) (
 	case "synchronize":
 		pullEventType = models.UpdatedPullEvent
 	case "closed":
-		pullEventType = models.ClosedPullEvent
+		merged := pullEvent.GetPullRequest().GetMerged()
+		if merged {
+			pullEventType = models.MergedPullEvent
+		} else {
+			pullEventType = models.ClosedPullEvent
+		}
 	default:
 		pullEventType = models.OtherPullEvent
 	}

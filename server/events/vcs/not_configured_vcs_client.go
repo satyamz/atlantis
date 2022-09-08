@@ -41,6 +41,9 @@ func (a *NotConfiguredVCSClient) PullIsApproved(repo models.Repo, pull models.Pu
 func (a *NotConfiguredVCSClient) PullIsMergeable(repo models.Repo, pull models.PullRequest, vcsstatusname string) (bool, error) {
 	return false, a.err()
 }
+func (a *NotConfiguredVCSClient) PullIsMerged(repo models.Repo, pull models.PullRequest, vcsstatusname string) (bool, error) {
+	return false, a.err()
+}
 func (a *NotConfiguredVCSClient) UpdateStatus(repo models.Repo, pull models.PullRequest, state models.CommitStatus, src string, description string, url string) error {
 	return a.err()
 }

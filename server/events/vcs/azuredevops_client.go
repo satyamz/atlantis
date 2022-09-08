@@ -217,6 +217,11 @@ func (g *AzureDevopsClient) PullIsMergeable(repo models.Repo, pull models.PullRe
 	return true, nil
 }
 
+// PullIsMerged returns true if the merge request is merged.
+func (g *AzureDevopsClient) PullIsMerged(repo models.Repo, pull models.PullRequest, vcsstatusname string) (bool, error) {
+	return false, errors.New("feature is not supported for BitBucket cloud merge request")
+}
+
 // GetPullRequest returns the pull request.
 func (g *AzureDevopsClient) GetPullRequest(repo models.Repo, num int) (*azuredevops.GitPullRequest, error) {
 	opts := azuredevops.PullRequestGetOptions{

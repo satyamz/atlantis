@@ -435,6 +435,21 @@ func (g *GithubClient) PullIsMergeable(repo models.Repo, pull models.PullRequest
 	return true, nil
 }
 
+func (g *GithubClient) PullIsMerged(repo models.Repo, pull models.PullRequest, vcsstatusname string) (bool, error) {
+	githubPR, err := g.GetPullRequest(repo, pull.Num)
+	if err != nil {
+		return false, errors.Wrap(err, "getting pull request")
+	}
+
+	//Check if PR is merged.
+	merged := githubPR.GetMerged()
+	if merged {
+		return true, nil
+	}
+
+	return false, errors.New("pull request is not merged")
+}
+
 // GetPullRequest returns the pull request.
 func (g *GithubClient) GetPullRequest(repo models.Repo, num int) (*github.PullRequest, error) {
 	var err error
