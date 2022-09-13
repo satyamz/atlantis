@@ -188,6 +188,28 @@ func (c *InstrumentedClient) PullIsMergeable(repo models.Repo, pull models.PullR
 	return mergeable, err
 }
 
+func (c *InstrumentedClient) PullIsMerged(repo models.Repo, pull models.PullRequest, vcsstatusname string) (bool, error) {
+	scope := c.StatsScope.SubScope("pull_is_merged")
+	logger := c.Logger.WithHistory(fmtLogSrc(repo, pull.Num)...)
+
+	executionTime := scope.Timer(metrics.ExecutionTimeMetric).Start()
+	defer executionTime.Stop()
+
+	executionSuccess := scope.Counter(metrics.ExecutionSuccessMetric)
+	executionError := scope.Counter(metrics.ExecutionErrorMetric)
+
+	merged, err := c.Client.PullIsMerged(repo, pull, vcsstatusname)
+
+	if err != nil {
+		executionError.Inc(1)
+		logger.Err("Unable to check pull merge status, error: %s", err.Error())
+	} else {
+		executionSuccess.Inc(1)
+	}
+
+	return merged, err
+}
+
 func (c *InstrumentedClient) UpdateStatus(repo models.Repo, pull models.PullRequest, state models.CommitStatus, src string, description string, url string) error {
 	scope := c.StatsScope.SubScope("update_status")
 	logger := c.Logger.WithHistory(fmtLogSrc(repo, pull.Num)...)

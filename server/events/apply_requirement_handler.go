@@ -36,6 +36,10 @@ func (a *AggregateApplyRequirements) ValidateProject(repoDir string, ctx command
 			if a.WorkingDir.HasDiverged(ctx.Log, repoDir) {
 				return "Default branch must be rebased onto pull request before running apply.", nil
 			}
+		case raw.MergedApplyRequirement:
+			if !ctx.PullReqStatus.Merged {
+				return "Pull request must be merged to run apply.", nil
+			}
 		}
 	}
 	// Passed all apply requirements configured.
