@@ -315,6 +315,7 @@ func (c *DefaultCommandRunner) RunPullEventApplyCommand(baseRepo models.Repo, ma
 		}
 		return
 	}
+
 	defer c.Drainer.OpDone()
 
 	log := c.buildLogger(baseRepo.FullName, pullNum)
@@ -331,6 +332,18 @@ func (c *DefaultCommandRunner) RunPullEventApplyCommand(baseRepo models.Repo, ma
 		log.Err("Unable to fetch pull status, this is likely a bug.", err)
 	}
 
+	// If ApplyRequirement to apply on merged pull is not present then abort.
+	MergedApplyRequirement := false
+	repo := c.GlobalCfg.MatchingRepo(pull.BaseRepo.ID())
+	for _, req := range repo.ApplyRequirements {
+		if req == valid.MergedApplyReq {
+			MergedApplyRequirement = true
+		}
+	}
+	if !MergedApplyRequirement {
+		log.Info("Unable to run atlantis apply since apply requirements did not satisfy.")
+		return
+	}
 	scope := c.StatsScope.SubScope(command.Apply.String())
 	timer := scope.Timer(metrics.ExecutionTimeMetric).Start()
 	defer timer.Stop()

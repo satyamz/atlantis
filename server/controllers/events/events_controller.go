@@ -419,7 +419,9 @@ func (e *VCSEventsController) handlePullRequestEvent(logger logging.SimpleLoggin
 		if eventType == models.OpenedPullEvent {
 			e.commentNotAllowlisted(baseRepo, pull.Num)
 		}
-
+		if eventType == models.MergedPullEvent {
+			e.commentNotAllowlisted(baseRepo, pull.Num)
+		}
 		err := errors.Errorf("Pull request event from non-allowlisted repo \"%s/%s\"", baseRepo.VCSHost.Hostname, baseRepo.FullName)
 
 		return HTTPResponse{
