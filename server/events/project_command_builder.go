@@ -119,6 +119,9 @@ type ProjectApplyCommandBuilder interface {
 	// comment doesn't specify one project then there may be multiple commands
 	// to be run.
 	BuildApplyCommands(ctx *command.Context, comment *CommentCommand) ([]command.ProjectContext, error)
+	// BuildAutoapplyCommands builds project commands that will run apply on
+	// the projects determined to be modified and projects which have merged as apply requirement.
+	BuildAutoapplyCommands(ctx *command.Context) ([]command.ProjectContext, error)
 }
 
 type ProjectApprovePoliciesCommandBuilder interface {
@@ -194,6 +197,28 @@ func (p *DefaultProjectCommandBuilder) BuildApplyCommands(ctx *command.Context, 
 	}
 	pac, err := p.buildProjectApplyCommand(ctx, cmd)
 	return pac, err
+}
+
+// See ProjectCommandBuilder.BuildAutoapplyCommands.
+func (p *DefaultProjectCommandBuilder) BuildAutoapplyCommands(ctx *command.Context) ([]command.ProjectContext, error) {
+	projCtxs, err := p.buildAllAutoProjectCommand(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var autoApplyReqProjCtx []command.ProjectContext
+
+	// Check all projects and filter projects based on where apply requirements have merged
+	for _, projCtx := range projCtxs {
+		if len(projCtx.ApplyRequirements) > 0 {
+			for _, req := range projCtx.ApplyRequirements {
+				if req == valid.MergedApplyReq {
+					autoApplyReqProjCtx = append(autoApplyReqProjCtx, projCtx)
+					continue
+				}
+			}
+		}
+	}
+	return autoApplyReqProjCtx, nil
 }
 
 func (p *DefaultProjectCommandBuilder) BuildApprovePoliciesCommands(ctx *command.Context, cmd *CommentCommand) ([]command.ProjectContext, error) {
@@ -518,6 +543,50 @@ func (p *DefaultProjectCommandBuilder) buildProjectApplyCommand(ctx *command.Con
 		workspace,
 		cmd.Verbose,
 	)
+}
+
+// buildAllAutoApplyProjectCommand builds contexts for a apply command for every project that has
+// pending plans in this ctx.
+func (p *DefaultProjectCommandBuilder) buildAllAutoProjectCommand(ctx *command.Context) ([]command.ProjectContext, error) {
+	// Lock all dirs in this pull request (instead of a single dir) because we
+	// don't know how many dirs we'll need to run the command in.
+	unlockFn, err := p.WorkingDirLocker.TryLockPull(ctx.Pull.BaseRepo.FullName, ctx.Pull.Num)
+	if err != nil {
+		return nil, err
+	}
+	defer unlockFn()
+
+	pullDir, err := p.WorkingDir.GetPullDir(ctx.Pull.BaseRepo, ctx.Pull)
+	if err != nil {
+		return nil, err
+	}
+
+	plans, err := p.PendingPlanFinder.Find(pullDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// use the default repository workspace because it is the only one guaranteed to have an atlantis.yaml,
+	// other workspaces will not have the file if they are using pre_workflow_hooks to generate it dynamically
+	defaultRepoDir, err := p.WorkingDir.GetWorkingDir(ctx.Pull.BaseRepo, ctx.Pull, DefaultWorkspace)
+	if err != nil {
+		return nil, err
+	}
+
+	var cmds []command.ProjectContext
+	for _, plan := range plans {
+		commentCmds, err := p.buildProjectCommandCtx(ctx, command.Apply, plan.ProjectName, nil, defaultRepoDir, plan.RepoRelDir, plan.Workspace, false)
+		if err != nil {
+			return nil, errors.Wrapf(err, "building command for dir %q", plan.RepoRelDir)
+		}
+		cmds = append(cmds, commentCmds...)
+	}
+
+	sort.Slice(cmds, func(i, j int) bool {
+		return cmds[i].ExecutionOrderGroup < cmds[j].ExecutionOrderGroup
+	})
+
+	return cmds, nil
 }
 
 // buildProjectVersionCommand builds a version command for the single project

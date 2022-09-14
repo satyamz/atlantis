@@ -82,6 +82,30 @@ func (c AutoplanCommand) IsAutoplan() bool {
 	return true
 }
 
+// AutoapplyCommand is a apply command that is automatically triggered when a
+// pull request is merged and apply requirements are satified.
+type AutoapplyCommand struct{}
+
+// CommandName is plan.
+func (c AutoapplyCommand) CommandName() command.Name {
+	return command.Apply
+}
+
+// IsVerbose is false for autoplan commands.
+func (c AutoapplyCommand) IsVerbose() bool {
+	return false
+}
+
+// IsAutoplan is true for autoplan commands (obviously).
+func (c AutoapplyCommand) IsAutoplan() bool {
+	return false
+}
+
+//NewAutoapplyCommand returns instance of AutoapplyCommand
+func NewAutoapplyCommand() *AutoapplyCommand {
+	return &AutoapplyCommand{}
+}
+
 // CommentCommand is a command that was triggered by a pull request comment.
 type CommentCommand struct {
 	// RepoRelDir is the path relative to the repo root to run the command in.

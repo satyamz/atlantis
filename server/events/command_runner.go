@@ -44,7 +44,7 @@ type CommandRunner interface {
 	// and then calling the appropriate services to finish executing the command.
 	RunCommentCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int, cmd *CommentCommand)
 	RunAutoplanCommand(baseRepo models.Repo, headRepo models.Repo, pull models.PullRequest, user models.User)
-	RunPullEventApplyCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int)
+	RunPullEventApplyCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int, cmd PullCommand)
 }
 
 //go:generate pegomock generate -m --use-experimental-model-gen --package mocks -o mocks/mock_github_pull_getter.go GithubPullGetter
@@ -308,7 +308,7 @@ func (c *DefaultCommandRunner) RunCommentCommand(baseRepo models.Repo, maybeHead
 // enough data to construct the Repo model and callers might want to wait until
 // the event is further validated before making an additional (potentially
 // wasteful) call to get the necessary data.
-func (c *DefaultCommandRunner) RunPullEventApplyCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int) {
+func (c *DefaultCommandRunner) RunPullEventApplyCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int, cmd PullCommand) {
 	if opStarted := c.Drainer.StartOp(); !opStarted {
 		if commentErr := c.VCSClient.CreateComment(baseRepo, pullNum, ShutdownComment, command.Plan.String()); commentErr != nil {
 			c.Logger.Log(logging.Error, "unable to comment that Atlantis is shutting down: %s", commentErr)
@@ -332,18 +332,6 @@ func (c *DefaultCommandRunner) RunPullEventApplyCommand(baseRepo models.Repo, ma
 		log.Err("Unable to fetch pull status, this is likely a bug.", err)
 	}
 
-	// If ApplyRequirement to apply on merged pull is not present then abort.
-	MergedApplyRequirement := false
-	repo := c.GlobalCfg.MatchingRepo(pull.BaseRepo.ID())
-	for _, req := range repo.ApplyRequirements {
-		if req == valid.MergedApplyReq {
-			MergedApplyRequirement = true
-		}
-	}
-	if !MergedApplyRequirement {
-		log.Info("Unable to run atlantis apply since apply requirements did not satisfy.")
-		return
-	}
 	scope := c.StatsScope.SubScope(command.Apply.String())
 	timer := scope.Timer(metrics.ExecutionTimeMetric).Start()
 	defer timer.Stop()
@@ -367,7 +355,7 @@ func (c *DefaultCommandRunner) RunPullEventApplyCommand(baseRepo models.Repo, ma
 	err = c.PreWorkflowHooksCommandRunner.RunPreHooks(ctx)
 
 	if err != nil {
-		ctx.Log.Err("Error running pre-workflow hooks %s. Proceeding with %s command.", err, command.Plan)
+		ctx.Log.Err("Error running pre-workflow hooks %s. Proceeding with %s command.", err, command.Apply)
 	}
 
 	pullEventApplyCommandRunner := buildCommentCommandRunner(c, command.Apply)
