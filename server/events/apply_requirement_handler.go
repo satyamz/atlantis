@@ -29,7 +29,8 @@ func (a *AggregateApplyRequirements) ValidateProject(repoDir string, ctx command
 				return "All policies must pass for project before running apply", nil
 			}
 		case raw.MergeableApplyRequirement:
-			if !ctx.PullReqStatus.Mergeable {
+			// PR which is merged will not have an mergeable requirement.
+			if !ctx.PullReqStatus.Mergeable && !ctx.PullReqStatus.Merged {
 				return "Pull request must be mergeable before running apply.", nil
 			}
 		case raw.UnDivergedApplyRequirement:
