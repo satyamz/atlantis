@@ -4,12 +4,11 @@
 package mocks
 
 import (
-	"reflect"
-	"time"
-
 	pegomock "github.com/petergtz/pegomock"
 	events "github.com/runatlantis/atlantis/server/events"
-	"github.com/runatlantis/atlantis/server/events/command"
+	command "github.com/runatlantis/atlantis/server/events/command"
+	"reflect"
+	"time"
 )
 
 type MockProjectCommandBuilder struct {
@@ -71,6 +70,25 @@ func (mock *MockProjectCommandBuilder) BuildApplyCommands(ctx *command.Context, 
 	}
 	params := []pegomock.Param{ctx, comment}
 	result := pegomock.GetGenericMockFrom(mock).Invoke("BuildApplyCommands", params, []reflect.Type{reflect.TypeOf((*[]command.ProjectContext)(nil)).Elem(), reflect.TypeOf((*error)(nil)).Elem()})
+	var ret0 []command.ProjectContext
+	var ret1 error
+	if len(result) != 0 {
+		if result[0] != nil {
+			ret0 = result[0].([]command.ProjectContext)
+		}
+		if result[1] != nil {
+			ret1 = result[1].(error)
+		}
+	}
+	return ret0, ret1
+}
+
+func (mock *MockProjectCommandBuilder) BuildAutoapplyCommands(ctx *command.Context) ([]command.ProjectContext, error) {
+	if mock == nil {
+		panic("mock must not be nil. Use myMock := NewMockProjectCommandBuilder().")
+	}
+	params := []pegomock.Param{ctx}
+	result := pegomock.GetGenericMockFrom(mock).Invoke("BuildAutoapplyCommands", params, []reflect.Type{reflect.TypeOf((*[]command.ProjectContext)(nil)).Elem(), reflect.TypeOf((*error)(nil)).Elem()})
 	var ret0 []command.ProjectContext
 	var ret1 error
 	if len(result) != 0 {
@@ -243,6 +261,33 @@ func (c *MockProjectCommandBuilder_BuildApplyCommands_OngoingVerification) GetAl
 		_param1 = make([]*events.CommentCommand, len(c.methodInvocations))
 		for u, param := range params[1] {
 			_param1[u] = param.(*events.CommentCommand)
+		}
+	}
+	return
+}
+
+func (verifier *VerifierMockProjectCommandBuilder) BuildAutoapplyCommands(ctx *command.Context) *MockProjectCommandBuilder_BuildAutoapplyCommands_OngoingVerification {
+	params := []pegomock.Param{ctx}
+	methodInvocations := pegomock.GetGenericMockFrom(verifier.mock).Verify(verifier.inOrderContext, verifier.invocationCountMatcher, "BuildAutoapplyCommands", params, verifier.timeout)
+	return &MockProjectCommandBuilder_BuildAutoapplyCommands_OngoingVerification{mock: verifier.mock, methodInvocations: methodInvocations}
+}
+
+type MockProjectCommandBuilder_BuildAutoapplyCommands_OngoingVerification struct {
+	mock              *MockProjectCommandBuilder
+	methodInvocations []pegomock.MethodInvocation
+}
+
+func (c *MockProjectCommandBuilder_BuildAutoapplyCommands_OngoingVerification) GetCapturedArguments() *command.Context {
+	ctx := c.GetAllCapturedArguments()
+	return ctx[len(ctx)-1]
+}
+
+func (c *MockProjectCommandBuilder_BuildAutoapplyCommands_OngoingVerification) GetAllCapturedArguments() (_param0 []*command.Context) {
+	params := pegomock.GetGenericMockFrom(c.mock).GetInvocationParams(c.methodInvocations)
+	if len(params) > 0 {
+		_param0 = make([]*command.Context, len(c.methodInvocations))
+		for u, param := range params[0] {
+			_param0[u] = param.(*command.Context)
 		}
 	}
 	return
