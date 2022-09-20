@@ -174,7 +174,6 @@ func TestNewGlobalCfg(t *testing.T) {
 			if c.unDivergedReq {
 				exp.Repos[0].ApplyRequirements = append(exp.Repos[0].ApplyRequirements, "undiverged")
 			}
-
 			Equals(t, exp, act)
 
 			// Have to hand-compare regexes because Equals doesn't do it.
@@ -208,6 +207,7 @@ func TestGlobalCfg_ValidateRepoCfg(t *testing.T) {
 						MergeableReq:  false,
 						ApprovedReq:   false,
 						UnDivergedReq: false,
+						MergedReq:     false,
 					}).Repos[0],
 					{
 						ID:                   "github.com/owner/repo",

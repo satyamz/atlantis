@@ -188,8 +188,8 @@ func NewGlobalCfgFromArgs(args GlobalCfgArgs) GlobalCfg {
 		applyReqs = append(applyReqs, UnDivergedApplyReq)
 	}
 
-	if args.MergeableReq {
-		applyReqs = append(applyReqs, MergeableApplyReq)
+	if args.MergedReq {
+		applyReqs = append(applyReqs, MergedApplyReq)
 	}
 
 	if args.PolicyCheckEnabled {
