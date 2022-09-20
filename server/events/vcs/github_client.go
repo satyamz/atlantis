@@ -447,7 +447,7 @@ func (g *GithubClient) PullIsMerged(repo models.Repo, pull models.PullRequest, v
 		return true, nil
 	}
 
-	return false, errors.New("pull request is not merged")
+	return false, nil
 }
 
 // GetPullRequest returns the pull request.

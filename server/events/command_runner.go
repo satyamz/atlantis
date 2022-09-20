@@ -469,10 +469,10 @@ func (c *DefaultCommandRunner) validateCtxAndComment(ctx *command.Context) bool 
 		}
 		return false
 	}
-	//ToDo: Add a proper VCS Status name to the following call.
+
 	pullIsMerged, err := c.VCSClient.PullIsMerged(ctx.HeadRepo, ctx.Pull, "")
 	if err != nil {
-		ctx.Log.Info("pull status : %s", err)
+		ctx.Log.Info("unable to fetch pull merge status: %s", err)
 	}
 
 	if ctx.Pull.State != models.OpenPullState && !pullIsMerged {
