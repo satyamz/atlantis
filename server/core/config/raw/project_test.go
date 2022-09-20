@@ -130,6 +130,14 @@ func TestProject_Validate(t *testing.T) {
 			expErr: "",
 		},
 		{
+			description: "apply reqs with merged requirement",
+			input: raw.Project{
+				Dir:               String("."),
+				ApplyRequirements: []string{"merged"},
+			},
+			expErr: "",
+		},
+		{
 			description: "apply reqs with mergeable and approved requirements",
 			input: raw.Project{
 				Dir:               String("."),
