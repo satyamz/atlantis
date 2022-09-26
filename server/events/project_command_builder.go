@@ -206,15 +206,20 @@ func (p *DefaultProjectCommandBuilder) BuildAutoapplyCommands(ctx *command.Conte
 		return nil, err
 	}
 	var autoApplyReqProjCtx []command.ProjectContext
+	requirementsMap := map[string]bool{}
 
-	// Check all projects and filter projects based on where apply requirements have merged
+	// Check all projects and filter projects based on where apply requirements have only merged requirement.
 	for _, projCtx := range projCtxs {
 		if len(projCtx.ApplyRequirements) > 0 {
 			for _, req := range projCtx.ApplyRequirements {
-				if req == valid.MergedApplyReq {
-					autoApplyReqProjCtx = append(autoApplyReqProjCtx, projCtx)
-					continue
-				}
+				requirementsMap[req] = true
+			}
+			//When merged requirement is enabled, other requirements should not be enabled. They are mutually exclusive.
+			if requirementsMap[valid.MergedApplyReq] && !requirementsMap[valid.ApprovedApplyReq] && !requirementsMap[valid.MergeableApplyReq] {
+				autoApplyReqProjCtx = append(autoApplyReqProjCtx, projCtx)
+			} else {
+				ctx.Log.Warn("skipping project since requirements other than merged have been enabled too.")
+				return nil, errors.Errorf("skipping apply since requirements other merged have been enabled too.")
 			}
 		}
 	}
