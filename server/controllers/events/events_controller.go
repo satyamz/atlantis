@@ -465,11 +465,10 @@ func (e *VCSEventsController) handlePullRequestEvent(logger logging.SimpleLoggin
 			body: "Pull request cleaned successfully",
 		}
 	case models.MergedPullEvent:
-		//If the pull request was merged, we check if apply-on-merge requirement was specified.
-		//TODO: Implement apply plan here.
+		//If the pull request was merged, we check if merged requirement was specified.
 		cmd := events.NewAutoapplyCommand()
 		e.CommandRunner.RunPullEventApplyCommand(baseRepo, &headRepo, &pull, user, pull.Num, cmd)
-		//Else if apply-on-merge requirement was not specified, we treat PR as closed.
+		//Else if merged requirement was not specified, we treat PR as closed.
 		if err := e.PullCleaner.CleanUpPull(baseRepo, pull); err != nil {
 			return HTTPResponse{
 				body: err.Error(),
