@@ -219,7 +219,7 @@ func (p *DefaultProjectCommandBuilder) BuildAutoapplyCommands(ctx *command.Conte
 				autoApplyReqProjCtx = append(autoApplyReqProjCtx, projCtx)
 			} else {
 				ctx.Log.Warn("skipping project since requirements other than merged have been enabled too.")
-				return nil, errors.Errorf("skipping apply since requirements other merged have been enabled too.")
+				return nil, errors.Errorf("skipping apply since requirements other than merged have been enabled too.")
 			}
 		}
 	}
