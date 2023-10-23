@@ -32,6 +32,10 @@ func (a *DefaultCommandRequirementHandler) ValidatePlanProject(repoDir string, c
 			if a.WorkingDir.HasDiverged(repoDir) {
 				return "Default branch must be rebased onto pull request before running plan.", nil
 			}
+		case raw.MergedApplyRequirement:
+			if !ctx.PullReqStatus.Merged {
+				return "Pull request must be merged to run apply.", nil
+			}
 		}
 	}
 	// Passed all plan requirements configured.

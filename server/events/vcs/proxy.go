@@ -111,3 +111,7 @@ func (d *ClientProxy) GetCloneURL(VCSHostType models.VCSHostType, repo string) (
 func (d *ClientProxy) GetPullLabels(repo models.Repo, pull models.PullRequest) ([]string, error) {
 	return d.clients[repo.VCSHost.Type].GetPullLabels(repo, pull)
 }
+
+func (d *ClientProxy) PullIsMerged(repo models.Repo, pull models.PullRequest) (bool, error) {
+	return d.clients[repo.VCSHost.Type].PullIsMerged(repo, pull)
+}

@@ -435,6 +435,10 @@ func (e *VCSEventsController) handlePullRequestEvent(logger logging.SimpleLoggin
 			e.commentNotAllowlisted(baseRepo, pull.Num)
 		}
 
+		if eventType == models.MergedPullEvent {
+			e.commentNotAllowlisted(baseRepo, pull.Num)
+		}
+
 		err := errors.Errorf("Pull request event from non-allowlisted repo \"%s/%s\"", baseRepo.VCSHost.Hostname, baseRepo.FullName)
 
 		return HTTPResponse{
@@ -479,6 +483,27 @@ func (e *VCSEventsController) handlePullRequestEvent(logger logging.SimpleLoggin
 		return HTTPResponse{
 			body: "Pull request cleaned successfully",
 		}
+
+	case models.MergedPullEvent:
+		//If the pull request was merged, we check if merged requirement was specified.
+		//TODO: Implement apply plan here.
+		cmd := events.NewAutoapplyCommand()
+		e.CommandRunner.RunPullEventApplyCommand(baseRepo, &headRepo, &pull, user, pull.Num, cmd)
+		//Else if merged requirement was not specified, we treat PR as closed.
+		if err := e.PullCleaner.CleanUpPull(baseRepo, pull); err != nil {
+			return HTTPResponse{
+				body: err.Error(),
+				err: HTTPError{
+					code: http.StatusForbidden,
+					err:  err,
+				},
+			}
+		}
+		logger.Info("deleted locks and workspace for repo %s, pull %d", baseRepo.FullName, pull.Num)
+		return HTTPResponse{
+			body: "Pull request cleaned successfully",
+		}
+
 	case models.OtherPullEvent:
 		// Else we ignore the event.
 		return HTTPResponse{

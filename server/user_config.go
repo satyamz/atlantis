@@ -93,6 +93,9 @@ type UserConfig struct {
 	// RequireMergeable is whether to require pull requests to be mergeable before
 	// allowing terraform apply's to run.
 	RequireMergeable bool `mapstructure:"require-mergeable"`
+	// RequireMerged is whether to require pull requests to be merged before
+	// allowing terraform apply's to run.
+	RequireMerged bool `mapstructure:"require-merged"`
 	// SilenceNoProjects is whether Atlantis should respond to a PR if no projects are found.
 	SilenceNoProjects bool `mapstructure:"silence-no-projects"`
 	// RequireUnDiverged is whether to require pull requests to rebase default branch before

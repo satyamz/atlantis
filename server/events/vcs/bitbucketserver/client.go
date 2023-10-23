@@ -225,6 +225,11 @@ func (b *Client) PullIsMergeable(repo models.Repo, pull models.PullRequest, vcss
 	return false, nil
 }
 
+// PullIsMerged returns true if the merge request is merged.
+func (b *Client) PullIsMerged(repo models.Repo, pull models.PullRequest) (bool, error) {
+	return false, errors.New("feature is not supported for BitBucket server merge request")
+}
+
 // UpdateStatus updates the status of a commit.
 func (b *Client) UpdateStatus(repo models.Repo, pull models.PullRequest, status models.CommitStatus, src string, description string, url string) error {
 	bbState := "FAILED"

@@ -34,7 +34,7 @@ func (v *StateCommandRunner) Run(ctx *command.Context, cmd *CommentCommand) {
 			Failure: fmt.Sprintf("unknown state subcommand %s", cmd.SubName),
 		}
 	}
-	v.pullUpdater.updatePull(ctx, cmd, result)
+	v.pullUpdater.updatePull(ctx, cmd, result, nil)
 }
 
 func (v *StateCommandRunner) runRm(ctx *command.Context, cmd *CommentCommand) command.Result {

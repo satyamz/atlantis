@@ -35,6 +35,7 @@ import (
 type PullReqStatus struct {
 	ApprovalStatus ApprovalStatus
 	Mergeable      bool
+	Merged         bool
 }
 
 // Repo is a VCS repository.
@@ -200,6 +201,7 @@ const (
 	OpenedPullEvent PullRequestEventType = iota
 	UpdatedPullEvent
 	ClosedPullEvent
+	MergedPullEvent
 	OtherPullEvent
 )
 
@@ -211,6 +213,8 @@ func (p PullRequestEventType) String() string {
 		return "updated"
 	case ClosedPullEvent:
 		return "closed"
+	case MergedPullEvent:
+		return "merged"
 	case OtherPullEvent:
 		return "other"
 	}

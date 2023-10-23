@@ -13,6 +13,7 @@ import (
 const MergeableCommandReq = "mergeable"
 const ApprovedCommandReq = "approved"
 const UnDivergedCommandReq = "undiverged"
+const MergedCommandReq = "merged"
 const PoliciesPassedCommandReq = "policies_passed"
 const PlanRequirementsKey = "plan_requirements"
 const ApplyRequirementsKey = "apply_requirements"
@@ -175,12 +176,13 @@ var DefaultStateRmStage = Stage{
 }
 
 // Deprecated: use NewGlobalCfgFromArgs
-func NewGlobalCfgWithHooks(allowRepoCfg bool, mergeableReq bool, approvedReq bool, unDivergedReq bool, preWorkflowHooks []*WorkflowHook, postWorkflowHooks []*WorkflowHook) GlobalCfg {
+func NewGlobalCfgWithHooks(allowRepoCfg bool, mergeableReq bool, approvedReq bool, unDivergedReq bool, mergedApplyReq bool, preWorkflowHooks []*WorkflowHook, postWorkflowHooks []*WorkflowHook) GlobalCfg {
 	return NewGlobalCfgFromArgs(GlobalCfgArgs{
 		AllowRepoCfg:      allowRepoCfg,
 		MergeableReq:      mergeableReq,
 		ApprovedReq:       approvedReq,
 		UnDivergedReq:     unDivergedReq,
+		MergedReq:         mergedApplyReq,
 		PreWorkflowHooks:  preWorkflowHooks,
 		PostWorkflowHooks: postWorkflowHooks,
 	})
@@ -206,6 +208,7 @@ type GlobalCfgArgs struct {
 	AllowRepoCfg       bool
 	MergeableReq       bool
 	ApprovedReq        bool
+	MergedReq          bool
 	UnDivergedReq      bool
 	PolicyCheckEnabled bool
 	PreWorkflowHooks   []*WorkflowHook
@@ -235,6 +238,9 @@ func NewGlobalCfgFromArgs(args GlobalCfgArgs) GlobalCfg {
 	}
 	if args.UnDivergedReq {
 		commandReqs = append(commandReqs, UnDivergedCommandReq)
+	}
+	if args.MergedReq {
+		commandReqs = append(commandReqs, MergedCommandReq)
 	}
 	if args.PolicyCheckEnabled {
 		commandReqs = append(commandReqs, PoliciesPassedCommandReq)

@@ -34,8 +34,14 @@ func (f *pullReqStatusFetcher) FetchPullStatus(pull models.PullRequest) (pullSta
 		return pullStatus, errors.Wrapf(err, "fetching mergeability status for repo: %s, and pull number: %d", pull.BaseRepo.FullName, pull.Num)
 	}
 
+	merged, err := f.client.PullIsMerged(pull.BaseRepo, pull)
+	if err != nil {
+		return pullStatus, errors.Wrapf(err, "fetching pull merge status for repo: %s, and pull number: %d", pull.BaseRepo.FullName, pull.Num)
+	}
+
 	return models.PullReqStatus{
 		ApprovalStatus: approvalStatus,
 		Mergeable:      mergeable,
+		Merged:         merged,
 	}, err
 }

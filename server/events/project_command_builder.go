@@ -160,6 +160,10 @@ type ProjectApplyCommandBuilder interface {
 	// comment doesn't specify one project then there may be multiple commands
 	// to be run.
 	BuildApplyCommands(ctx *command.Context, comment *CommentCommand) ([]command.ProjectContext, error)
+
+	// BuildAutoapplyCommands builds project commands that will run apply on
+	// the projects determined to be modified and projects which have merged as apply requirement.
+	BuildAutoapplyCommands(ctx *command.Context) ([]command.ProjectContext, error)
 }
 
 type ProjectApprovePoliciesCommandBuilder interface {
@@ -261,6 +265,32 @@ func (p *DefaultProjectCommandBuilder) BuildAutoplanCommands(ctx *command.Contex
 		autoplanEnabled = append(autoplanEnabled, projCtx)
 	}
 	return autoplanEnabled, nil
+}
+
+func (p *DefaultProjectCommandBuilder) BuildAutoapplyCommands(ctx *command.Context) ([]command.ProjectContext, error) {
+	projCtxs, err := p.buildAllAutoProjectCommand(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var autoApplyReqProjCtx []command.ProjectContext
+	requirementsMap := map[string]bool{}
+
+	// Check all projects and filter projects based on where apply requirements have only merged requirement.
+	for _, projCtx := range projCtxs {
+		if len(projCtx.ApplyRequirements) > 0 {
+			for _, req := range projCtx.ApplyRequirements {
+				requirementsMap[req] = true
+			}
+			//When merged requirement is enabled, other requirements should not be enabled. They are mutually exclusive.
+			if requirementsMap[valid.MergedCommandReq] && !requirementsMap[valid.ApprovedCommandReq] && !requirementsMap[valid.MergeableCommandReq] {
+				autoApplyReqProjCtx = append(autoApplyReqProjCtx, projCtx)
+			} else {
+				ctx.Log.Warn("skipping project since requirements other than merged have been enabled too.")
+				return nil, errors.Errorf("skipping apply since requirements other than merged have been enabled too.")
+			}
+		}
+	}
+	return autoApplyReqProjCtx, nil
 }
 
 // See ProjectCommandBuilder.BuildPlanCommands.
@@ -666,6 +696,50 @@ func (p *DefaultProjectCommandBuilder) getCfg(ctx *command.Context, projectName 
 	}
 	projectsCfg = projCfgs
 	return
+}
+
+// buildAllAutoApplyProjectCommand builds contexts for a apply command for every project that has
+// pending plans in this ctx.
+func (p *DefaultProjectCommandBuilder) buildAllAutoProjectCommand(ctx *command.Context) ([]command.ProjectContext, error) {
+	// Lock all dirs in this pull request (instead of a single dir) because we
+	// don't know how many dirs we'll need to run the command in.
+	unlockFn, err := p.WorkingDirLocker.TryLockPull(ctx.Pull.BaseRepo.FullName, ctx.Pull.Num)
+	if err != nil {
+		return nil, err
+	}
+	defer unlockFn()
+
+	pullDir, err := p.WorkingDir.GetPullDir(ctx.Pull.BaseRepo, ctx.Pull)
+	if err != nil {
+		return nil, err
+	}
+
+	plans, err := p.PendingPlanFinder.Find(pullDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// use the default repository workspace because it is the only one guaranteed to have an atlantis.yaml,
+	// other workspaces will not have the file if they are using pre_workflow_hooks to generate it dynamically
+	defaultRepoDir, err := p.WorkingDir.GetWorkingDir(ctx.Pull.BaseRepo, ctx.Pull, DefaultWorkspace)
+	if err != nil {
+		return nil, err
+	}
+
+	var cmds []command.ProjectContext
+	for _, plan := range plans {
+		commentCmds, err := p.buildProjectCommandCtx(ctx, command.Apply, "", plan.ProjectName, nil, defaultRepoDir, plan.RepoRelDir, plan.Workspace, false)
+		if err != nil {
+			return nil, errors.Wrapf(err, "building command for dir %q", plan.RepoRelDir)
+		}
+		cmds = append(cmds, commentCmds...)
+	}
+
+	sort.Slice(cmds, func(i, j int) bool {
+		return cmds[i].ExecutionOrderGroup < cmds[j].ExecutionOrderGroup
+	})
+
+	return cmds, nil
 }
 
 // buildAllProjectCommandsByPlan builds contexts for a command for every project that has

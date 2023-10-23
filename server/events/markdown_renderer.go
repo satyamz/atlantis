@@ -21,6 +21,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/runatlantis/atlantis/server/core/config/valid"
 	"github.com/runatlantis/atlantis/server/events/command"
 	"github.com/runatlantis/atlantis/server/events/models"
 	"golang.org/x/text/cases"
@@ -70,6 +71,7 @@ type commonData struct {
 	DisableApply              bool
 	DisableRepoLocking        bool
 	EnableDiffMarkdownFormat  bool
+	MergedReqEnabled          bool
 	ExecutableName            string
 	HideUnchangedPlanComments bool
 }
@@ -154,8 +156,9 @@ func NewMarkdownRenderer(
 
 // Render formats the data into a markdown string.
 // nolint: interfacer
-func (m *MarkdownRenderer) Render(res command.Result, cmdName command.Name, subCmd, log string, verbose bool, vcsHost models.VCSHostType) string {
+func (m *MarkdownRenderer) Render(res command.Result, cmdName command.Name, subCmd, log string, verbose bool, vcsHost models.VCSHostType, projectCmds []command.ProjectContext) string {
 	commandStr := cases.Title(language.English).String(strings.Replace(cmdName.String(), "_", " ", -1))
+	mergedReqEnabled := m.isMergedReqEnabled(projectCmds)
 	common := commonData{
 		Command:                   commandStr,
 		SubCommand:                subCmd,
@@ -167,6 +170,7 @@ func (m *MarkdownRenderer) Render(res command.Result, cmdName command.Name, subC
 		DisableRepoLocking:        m.disableRepoLocking,
 		EnableDiffMarkdownFormat:  m.enableDiffMarkdownFormat,
 		ExecutableName:            m.executableName,
+		MergedReqEnabled:          mergedReqEnabled,
 		HideUnchangedPlanComments: m.hideUnchangedPlanComments,
 	}
 
@@ -297,7 +301,9 @@ func (m *MarkdownRenderer) renderProjectResults(results []command.ProjectResult,
 
 	var tmpl *template.Template
 	switch {
-	case len(resultsTmplData) == 1 && common.Command == planCommandTitle && numPlanSuccesses > 0:
+	case len(resultsTmplData) == 1 && common.Command == planCommandTitle && common.MergedReqEnabled && numPlanSuccesses > 0:
+		tmpl = templates.Lookup("singleProjectPlanSuccessMergedReqEnabled")
+	case len(resultsTmplData) == 1 && common.Command == planCommandTitle && !common.MergedReqEnabled && numPlanSuccesses > 0:
 		tmpl = templates.Lookup("singleProjectPlanSuccess")
 	case len(resultsTmplData) == 1 && common.Command == planCommandTitle && numPlanSuccesses == 0:
 		tmpl = templates.Lookup("singleProjectPlanUnsuccessful")
@@ -322,6 +328,8 @@ func (m *MarkdownRenderer) renderProjectResults(results []command.ProjectResult,
 		}
 	case common.Command == planCommandTitle:
 		tmpl = templates.Lookup("multiProjectPlan")
+	case common.Command == planCommandTitle && common.MergedReqEnabled:
+		tmpl = templates.Lookup("multiProjectPlanMergedReqEnabled")
 	case common.Command == policyCheckCommandTitle:
 		if numPolicyCheckSuccesses == len(results) {
 			tmpl = templates.Lookup("multiProjectPlan")
@@ -351,6 +359,24 @@ func (m *MarkdownRenderer) renderProjectResults(results []command.ProjectResult,
 		return fmt.Sprintf("no template matched–this is a bug: command=%s", common.Command)
 	}
 	return m.renderTemplateTrimSpace(tmpl, resultData{resultsTmplData, common})
+}
+
+func (m *MarkdownRenderer) isMergedReqEnabled(projectCmds []command.ProjectContext) bool {
+	requirementsMap := map[string]bool{}
+	for _, projCtx := range projectCmds {
+		if len(projCtx.ApplyRequirements) > 0 {
+			for _, req := range projCtx.ApplyRequirements {
+				requirementsMap[req] = true
+			}
+			//When merged requirement is enabled, other requirements should not be enabled. They are mutually exclusive.
+			if requirementsMap[valid.MergedCommandReq] && !requirementsMap[valid.ApprovedCommandReq] && !requirementsMap[valid.MergeableCommandReq] {
+				return true
+			} else {
+				return false
+			}
+		}
+	}
+	return false
 }
 
 // shouldUseWrappedTmpl returns true if we should use the wrapped markdown

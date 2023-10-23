@@ -67,7 +67,7 @@ func (p *PolicyCheckCommandRunner) Run(ctx *command.Context, cmds []command.Proj
 
 	// Quiet policy checks unless there's an error
 	if result.HasErrors() || !p.quietPolicyChecks {
-		p.pullUpdater.updatePull(ctx, PolicyCheckCommand{}, result)
+		p.pullUpdater.updatePull(ctx, PolicyCheckCommand{}, result, nil)
 	}
 
 	pullStatus, err := p.dbUpdater.updateDB(ctx, ctx.Pull, result.ProjectResults)

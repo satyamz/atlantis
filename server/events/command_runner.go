@@ -15,8 +15,9 @@ package events
 
 import (
 	"fmt"
-	"github.com/runatlantis/atlantis/server/utils"
 	"strconv"
+
+	"github.com/runatlantis/atlantis/server/utils"
 
 	"github.com/google/go-github/v54/github"
 	"github.com/mcdafydd/go-azuredevops/azuredevops"
@@ -45,6 +46,7 @@ type CommandRunner interface {
 	// and then calling the appropriate services to finish executing the command.
 	RunCommentCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int, cmd *CommentCommand)
 	RunAutoplanCommand(baseRepo models.Repo, headRepo models.Repo, pull models.PullRequest, user models.User)
+	RunPullEventApplyCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int, cmd PullCommand)
 }
 
 //go:generate pegomock generate --package mocks -o mocks/mock_github_pull_getter.go GithubPullGetter
@@ -334,6 +336,71 @@ func (c *DefaultCommandRunner) RunCommentCommand(baseRepo models.Repo, maybeHead
 	}
 }
 
+// RunPullEventApplyCommand executes the command.
+// We take in a pointer for maybeHeadRepo because for some events there isn't
+// enough data to construct the Repo model and callers might want to wait until
+// the event is further validated before making an additional (potentially
+// wasteful) call to get the necessary data.
+func (c *DefaultCommandRunner) RunPullEventApplyCommand(baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int, cmd PullCommand) {
+	if opStarted := c.Drainer.StartOp(); !opStarted {
+		if commentErr := c.VCSClient.CreateComment(baseRepo, pullNum, ShutdownComment, command.Plan.String()); commentErr != nil {
+			c.Logger.Log(logging.Error, "unable to comment that Atlantis is shutting down: %s", commentErr)
+		}
+		return
+	}
+	defer c.Drainer.OpDone()
+
+	log := c.buildLogger(baseRepo.FullName, pullNum)
+	defer c.logPanics(baseRepo, pullNum, log)
+
+	headRepo, pull, err := c.ensureValidRepoMetadata(baseRepo, maybeHeadRepo, maybePull, user, pullNum, log)
+	if err != nil {
+		return
+	}
+
+	status, err := c.PullStatusFetcher.GetPullStatus(pull)
+
+	if err != nil {
+		log.Err("Unable to fetch pull status, this is likely a bug.", err)
+	}
+
+	scope := c.StatsScope.SubScope(command.Apply.String())
+	timer := scope.Timer(metrics.ExecutionTimeMetric).Start()
+	defer timer.Stop()
+
+	ctx := &command.Context{
+		User:       user,
+		Log:        log,
+		Scope:      scope,
+		Pull:       pull,
+		HeadRepo:   headRepo,
+		PullStatus: status,
+		Trigger:    command.AutoTrigger,
+	}
+	if !c.validateCtxAndComment(ctx, command.Apply) {
+		return
+	}
+	if c.DisableAutoplan {
+		return
+	}
+
+	err = c.PreWorkflowHooksCommandRunner.RunPreHooks(ctx, nil)
+
+	if err != nil {
+		ctx.Log.Err("Error running pre-workflow hooks %s. Proceeding with %s command.", err, command.Apply)
+	}
+
+	pullEventApplyCommandRunner := buildCommentCommandRunner(c, command.Apply)
+
+	pullEventApplyCommandRunner.Run(ctx, nil)
+
+	err = c.PostWorkflowHooksCommandRunner.RunPostHooks(ctx, nil)
+
+	if err != nil {
+		ctx.Log.Err("Error running post-workflow hooks %s.", err)
+	}
+}
+
 func (c *DefaultCommandRunner) getGithubData(baseRepo models.Repo, pullNum int) (models.PullRequest, models.Repo, error) {
 	if c.GithubPullGetter == nil {
 		return models.PullRequest{}, models.Repo{}, errors.New("Atlantis not configured to support GitHub")
@@ -435,7 +502,12 @@ func (c *DefaultCommandRunner) validateCtxAndComment(ctx *command.Context, comma
 		return false
 	}
 
-	if ctx.Pull.State != models.OpenPullState && commandName != command.Unlock {
+	pullIsMerged, err := c.VCSClient.PullIsMerged(ctx.HeadRepo, ctx.Pull)
+	if err != nil {
+		ctx.Log.Info("unable to fetch pull merge status: %s", err)
+	}
+
+	if ctx.Pull.State != models.OpenPullState && commandName != command.Unlock && !pullIsMerged {
 		ctx.Log.Info("command was run on closed pull request")
 		if err := c.VCSClient.CreateComment(ctx.Pull.BaseRepo, ctx.Pull.Num, "Atlantis commands can't be run on closed pull requests", ""); err != nil {
 			ctx.Log.Err("unable to comment: %s", err)

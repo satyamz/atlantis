@@ -266,6 +266,7 @@ func TestGlobalCfg_ValidateRepoCfg(t *testing.T) {
 						MergeableReq:  false,
 						ApprovedReq:   false,
 						UnDivergedReq: false,
+						MergedReq:     false,
 					}).Repos[0],
 					{
 						ID:                   "github.com/owner/repo",

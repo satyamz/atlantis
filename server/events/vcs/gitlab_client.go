@@ -339,6 +339,11 @@ func (g *GitlabClient) PullIsMergeable(repo models.Repo, pull models.PullRequest
 	return false, nil
 }
 
+// PullIsMerged returns true if the merge request was merged.
+func (g *GitlabClient) PullIsMerged(repo models.Repo, pull models.PullRequest) (bool, error) {
+	return false, errors.New("feature not supported for Gitlab merge request")
+}
+
 func (g *GitlabClient) SupportsDetailedMergeStatus() (bool, error) {
 	v, err := g.GetVersion()
 	if err != nil {

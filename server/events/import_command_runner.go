@@ -65,5 +65,5 @@ func (v *ImportCommandRunner) Run(ctx *command.Context, cmd *CommentCommand) {
 	} else {
 		result = runProjectCmds(projectCmds, v.prjCmdRunner.Import)
 	}
-	v.pullUpdater.updatePull(ctx, cmd, result)
+	v.pullUpdater.updatePull(ctx, cmd, result, nil)
 }

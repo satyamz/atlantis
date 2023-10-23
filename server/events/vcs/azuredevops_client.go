@@ -236,6 +236,11 @@ func (g *AzureDevopsClient) GetPullRequest(repo models.Repo, num int) (*azuredev
 	return pull, err
 }
 
+// PullIsMerged returns true if the merge request is merged.
+func (g *AzureDevopsClient) PullIsMerged(repo models.Repo, pull models.PullRequest) (bool, error) {
+	return false, errors.New("feature is not supported for AzureDevops merge request")
+}
+
 // UpdateStatus updates the build status of a commit.
 func (g *AzureDevopsClient) UpdateStatus(repo models.Repo, pull models.PullRequest, state models.CommitStatus, src string, description string, url string) error {
 	adState := azuredevops.GitError.String()

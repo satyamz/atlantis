@@ -61,7 +61,7 @@ func TestRenderErr(t *testing.T) {
 		}
 		for _, verbose := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s_%t", c.Description, verbose), func(t *testing.T) {
-				s := r.Render(res, c.Command, "", "log", verbose, models.Github)
+				s := r.Render(res, c.Command, "", "log", verbose, models.Github, nil)
 				if !verbose {
 					Equals(t, strings.TrimSpace(c.Expected), strings.TrimSpace(s))
 				} else {
@@ -106,7 +106,7 @@ func TestRenderFailure(t *testing.T) {
 		}
 		for _, verbose := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s_%t", c.Description, verbose), func(t *testing.T) {
-				s := r.Render(res, c.Command, "", "log", verbose, models.Github)
+				s := r.Render(res, c.Command, "", "log", verbose, models.Github, nil)
 				if !verbose {
 					Equals(t, strings.TrimSpace(c.Expected), strings.TrimSpace(s))
 				} else {
@@ -123,7 +123,7 @@ func TestRenderErrAndFailure(t *testing.T) {
 		Error:   errors.New("error"),
 		Failure: "failure",
 	}
-	s := r.Render(res, command.Plan, "", "", false, models.Github)
+	s := r.Render(res, command.Plan, "", "", false, models.Github, nil)
 	Equals(t, "**Plan Error**\n```\nerror\n```", s)
 }
 
@@ -970,7 +970,7 @@ $$$
 			}
 			for _, verbose := range []bool{true, false} {
 				t.Run(c.Description, func(t *testing.T) {
-					s := r.Render(res, c.Command, c.SubCommand, "log", verbose, c.VCSHost)
+					s := r.Render(res, c.Command, c.SubCommand, "log", verbose, c.VCSHost, nil)
 					expWithBackticks := strings.Replace(c.Expected, "$", "`", -1)
 					if !verbose {
 						Equals(t, strings.TrimSpace(expWithBackticks), strings.TrimSpace(s))
@@ -1126,7 +1126,7 @@ $$$
 			}
 			for _, verbose := range []bool{true, false} {
 				t.Run(c.Description, func(t *testing.T) {
-					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost)
+					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost, nil)
 					expWithBackticks := strings.Replace(c.Expected, "$", "`", -1)
 					if !verbose {
 						Equals(t, strings.TrimSpace(expWithBackticks), strings.TrimSpace(s))
@@ -1275,7 +1275,7 @@ $$$
 			}
 			for _, verbose := range []bool{true, false} {
 				t.Run(c.Description, func(t *testing.T) {
-					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost)
+					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost, nil)
 					expWithBackticks := strings.Replace(c.Expected, "$", "`", -1)
 					if !verbose {
 						Equals(t, strings.TrimSpace(expWithBackticks), strings.TrimSpace(s))
@@ -1327,7 +1327,7 @@ func TestRenderCustomPolicyCheckTemplate_DisableApplyAll(t *testing.T) {
 				},
 			},
 		},
-	}, command.PolicyCheck, "", "log", false, models.Github)
+	}, command.PolicyCheck, "", "log", false, models.Github, nil)
 	exp = `Ran Policy Check for dir: $path$ workspace: $workspace$
 
 #### Policy Set: $policy1$
@@ -1368,7 +1368,7 @@ func TestRenderProjectResults_DisableFolding(t *testing.T) {
 				Error:      errors.New(strings.Repeat("line\n", 13)),
 			},
 		},
-	}, command.Plan, "", "log", false, models.Github)
+	}, command.Plan, "", "log", false, models.Github, nil)
 	Equals(t, false, strings.Contains(rendered, "\n<details>"))
 }
 
@@ -1460,7 +1460,7 @@ func TestRenderProjectResults_WrappedErr(t *testing.T) {
 							Error:      errors.New(c.Output),
 						},
 					},
-				}, command.Plan, "", "log", false, c.VCSHost)
+				}, command.Plan, "", "log", false, c.VCSHost, nil)
 				var exp string
 				if c.ShouldWrap {
 					exp = `Ran Plan for dir: $.$ workspace: $default$
@@ -1589,7 +1589,7 @@ func TestRenderProjectResults_WrapSingleProject(t *testing.T) {
 					}
 					rendered := mr.Render(command.Result{
 						ProjectResults: []command.ProjectResult{pr},
-					}, cmd, "", "log", false, c.VCSHost)
+					}, cmd, "", "log", false, c.VCSHost, nil)
 
 					// Check result.
 					var exp string
@@ -1689,7 +1689,7 @@ func TestRenderProjectResults_MultiProjectApplyWrapped(t *testing.T) {
 				ApplySuccess: tfOut,
 			},
 		},
-	}, command.Apply, "", "log", false, models.Github)
+	}, command.Apply, "", "log", false, models.Github, nil)
 	exp := `Ran Apply for 2 projects:
 
 1. dir: $.$ workspace: $staging$
@@ -1755,7 +1755,7 @@ func TestRenderProjectResults_MultiProjectPlanWrapped(t *testing.T) {
 				},
 			},
 		},
-	}, command.Plan, "", "log", false, models.Github)
+	}, command.Plan, "", "log", false, models.Github, nil)
 	exp := `Ran Plan for 2 projects:
 
 1. dir: $.$ workspace: $staging$
@@ -1907,7 +1907,7 @@ This plan was not saved because one or more projects failed and automerge requir
 				"atlantis", // executableName
 				false,      // hideUnchangedPlanComments
 			)
-			rendered := mr.Render(c.cr, command.Plan, "", "log", false, models.Github)
+			rendered := mr.Render(c.cr, command.Plan, "", "log", false, models.Github, nil)
 			expWithBackticks := strings.Replace(c.exp, "$", "`", -1)
 			Equals(t, expWithBackticks, rendered)
 		})
@@ -2373,7 +2373,7 @@ $$$
 			}
 			for _, verbose := range []bool{true, false} {
 				t.Run(c.Description, func(t *testing.T) {
-					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost)
+					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost, nil)
 					expWithBackticks := strings.Replace(c.Expected, "$", "`", -1)
 					if !verbose {
 						Equals(t, strings.TrimSpace(expWithBackticks), strings.TrimSpace(s))
@@ -2811,7 +2811,7 @@ func TestRenderProjectResultsWithEnableDiffMarkdownFormat(t *testing.T) {
 			}
 			for _, verbose := range []bool{true, false} {
 				t.Run(c.Description, func(t *testing.T) {
-					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost)
+					s := r.Render(res, c.Command, "", "log", verbose, c.VCSHost, nil)
 					expWithBackticks := strings.Replace(c.Expected, "$", "`", -1)
 					if !verbose {
 						Equals(t, strings.TrimSpace(expWithBackticks), strings.TrimSpace(s))
@@ -2850,7 +2850,7 @@ func BenchmarkRenderProjectResultsWithEnableDiffMarkdownFormat(b *testing.B) {
 				b.Run(fmt.Sprintf("verbose %t", verbose), func(b *testing.B) {
 					b.ReportAllocs()
 					for i := 0; i < b.N; i++ {
-						render = r.Render(res, c.Command, "", "log", verbose, c.VCSHost)
+						render = r.Render(res, c.Command, "", "log", verbose, c.VCSHost, nil)
 					}
 					Render = render
 				})
@@ -3004,7 +3004,7 @@ $$$
 			}
 			for _, verbose := range []bool{true, false} {
 				t.Run(c.Description, func(t *testing.T) {
-					s := r.Render(res, c.Command, c.SubCommand, "log", verbose, c.VCSHost)
+					s := r.Render(res, c.Command, c.SubCommand, "log", verbose, c.VCSHost, nil)
 					expWithBackticks := strings.Replace(c.Expected, "$", "`", -1)
 					if !verbose {
 						Equals(t, strings.TrimSpace(expWithBackticks), strings.TrimSpace(s))

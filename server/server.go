@@ -201,6 +201,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			AllowRepoCfg:       userConfig.AllowRepoConfig,
 			MergeableReq:       userConfig.RequireMergeable,
 			ApprovedReq:        userConfig.RequireApproval,
+			MergedReq:          userConfig.RequireMerged,
 			UnDivergedReq:      userConfig.RequireUnDiverged,
 			PolicyCheckEnabled: userConfig.EnablePolicyChecksFlag,
 		})

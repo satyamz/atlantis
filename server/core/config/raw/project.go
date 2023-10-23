@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	DefaultWorkspace      = "default"
-	ApprovedRequirement   = "approved"
-	MergeableRequirement  = "mergeable"
-	UnDivergedRequirement = "undiverged"
+	DefaultWorkspace       = "default"
+	ApprovedRequirement    = "approved"
+	MergeableRequirement   = "mergeable"
+	MergedApplyRequirement = "merged"
+	UnDivergedRequirement  = "undiverged"
 )
 
 type Project struct {
@@ -168,8 +169,8 @@ func validPlanReq(value interface{}) error {
 func validApplyReq(value interface{}) error {
 	reqs := value.([]string)
 	for _, r := range reqs {
-		if r != ApprovedRequirement && r != MergeableRequirement && r != UnDivergedRequirement {
-			return fmt.Errorf("%q is not a valid apply_requirement, only %q, %q and %q are supported", r, ApprovedRequirement, MergeableRequirement, UnDivergedRequirement)
+		if r != ApprovedRequirement && r != MergeableRequirement && r != UnDivergedRequirement && r != MergedApplyRequirement {
+			return fmt.Errorf("%q is not a valid apply_requirement, only %q, %q, %q and %q are supported", r, ApprovedRequirement, MergeableRequirement, UnDivergedRequirement, MergedApplyRequirement)
 		}
 	}
 	return nil

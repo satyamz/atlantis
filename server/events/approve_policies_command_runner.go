@@ -54,7 +54,7 @@ func (a *ApprovePoliciesCommandRunner) Run(ctx *command.Context, cmd *CommentCom
 		if statusErr := a.commitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.FailedCommitStatus, command.PolicyCheck); statusErr != nil {
 			ctx.Log.Warn("unable to update commit status: %s", statusErr)
 		}
-		a.pullUpdater.updatePull(ctx, cmd, command.Result{Error: err})
+		a.pullUpdater.updatePull(ctx, cmd, command.Result{Error: err}, nil)
 		return
 	}
 
@@ -78,6 +78,7 @@ func (a *ApprovePoliciesCommandRunner) Run(ctx *command.Context, cmd *CommentCom
 		ctx,
 		cmd,
 		result,
+		nil,
 	)
 
 	pullStatus, err := a.dbUpdater.updateDB(ctx, pull, result.ProjectResults)

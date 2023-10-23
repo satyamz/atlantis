@@ -11,7 +11,7 @@ type PullUpdater struct {
 	MarkdownRenderer     *MarkdownRenderer
 }
 
-func (c *PullUpdater) updatePull(ctx *command.Context, cmd PullCommand, res command.Result) {
+func (c *PullUpdater) updatePull(ctx *command.Context, cmd PullCommand, res command.Result, projectCmds []command.ProjectContext) {
 	// Log if we got any errors or failures.
 	if res.Error != nil {
 		ctx.Log.Err(res.Error.Error())
@@ -28,7 +28,7 @@ func (c *PullUpdater) updatePull(ctx *command.Context, cmd PullCommand, res comm
 		}
 	}
 
-	comment := c.MarkdownRenderer.Render(res, cmd.CommandName(), cmd.SubCommandName(), ctx.Log.GetHistory(), cmd.IsVerbose(), ctx.Pull.BaseRepo.VCSHost.Type)
+	comment := c.MarkdownRenderer.Render(res, cmd.CommandName(), cmd.SubCommandName(), ctx.Log.GetHistory(), cmd.IsVerbose(), ctx.Pull.BaseRepo.VCSHost.Type, projectCmds)
 	if err := c.VCSClient.CreateComment(ctx.Pull.BaseRepo, ctx.Pull.Num, comment, cmd.CommandName().String()); err != nil {
 		ctx.Log.Err("unable to comment: %s", err)
 	}
